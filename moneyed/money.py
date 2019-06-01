@@ -29,13 +29,14 @@ class Currency(object):
     canonical name, and countries the currency is used in.
     """
 
-    def __init__(self, code='', numeric='999', name='', countries=None):
+    def __init__(self, code='', numeric='999', name='', sign='', countries=None):
         if countries is None:
             countries = []
         self.code = code
         self.countries = countries
         self.name = name
         self.numeric = numeric
+        self.sign = sign
 
     def __hash__(self):
         return hash(self.code)
@@ -101,10 +102,8 @@ class Money(object):
         from moneyed.localization import format_money
 
         if PYTHON2:
-            return '%s%s' % (
-                self.currency.code,
-                format_money(self, include_symbol=False),
-            )
+            sign = self.currency.sign or self.currency.code
+            return '%s%s' % (sign, format_money(self, include_symbol=False))
         else:
             return format_money(self)
 
@@ -253,10 +252,16 @@ CURRENCIES = {}
 CURRENCIES_BY_ISO = {}
 
 
-def add_currency(code, numeric, name, countries):
+def add_currency(code, numeric, name, sign, countries=None):
     global CURRENCIES
+
+    # a little hack to make old funtion calls work
+    if countries is None and isinstance(sign, list):
+        countries = sign
+        sign = ''
+
     CURRENCIES[code] = Currency(
-        code=code, numeric=numeric, name=name, countries=countries
+        code=code, numeric=numeric, name=name, sign=sign, countries=countries
     )
     CURRENCIES_BY_ISO[numeric] = CURRENCIES[code]
     return CURRENCIES[code]

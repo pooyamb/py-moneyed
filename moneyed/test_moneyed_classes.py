@@ -502,6 +502,80 @@ class TestMoney:
         assert result == Money('4.875', 'GBP')
 
 
+class TestL10N:
+    def test_new_currency_format(self):
+        from moneyed.money import add_currency
+        from moneyed.l10n import format_currency
+
+        add_currency('BTC', 'Nil', 'Bitcoin', '₿', [])
+
+        assert (
+            format_currency(
+                Money(10.000000258, 'BTC'),
+                format='¤¤¤ #,##0.00000000',
+                locale='en_UK',
+                currency_digits=False,
+            )
+            == 'Bitcoin 10.00000026'
+        )
+
+    def test_providing_locale_data(self):
+        from moneyed.money import add_currency
+        from moneyed.l10n import format_currency, set_locale_data, LocaleData
+
+        add_currency('BTC', 'Nil', 'Bitcoin', '₿', [])
+
+        set_locale_data('USD', sign='US$$', name='My Dollars', locale='en_UK')
+        assert format_currency(Money(10.009, 'USD'), locale='en_UK') == 'US$$10.01'
+
+        set_locale_data('BTC', sign='B', name='My Bitcoins', locale='en_UK')
+        assert (
+            format_currency(
+                Money(10.000000258, 'BTC'),
+                format='¤¤¤ #,##0.00000000',
+                locale='en_UK',
+                currency_digits=False,
+            )
+            == 'My Bitcoins 10.00000026'
+        )
+
+        LocaleData.data = {}
+        LocaleData.data_providers = []
+
+    def test_locale_providers(self):
+        from moneyed.money import add_currency
+        from moneyed.l10n import (
+            add_locale_data_provider,
+            format_currency,
+            LocaleDataNotFound,
+        )
+
+        add_currency('BTC', 'Nil', 'Bitcoin', '₿', [])
+
+        def my_provider(currency, locale):
+            if currency == 'BTC' and locale == 'en_UK':
+                return {'sign': 'B', 'name': 'My Bitcoins'}
+            elif currency == 'USD' and locale == 'en_UK':
+                return {'sign': 'US$$', 'name': 'My Dollars'}
+            else:
+                raise LocaleDataNotFound(locale, currency)
+
+        add_locale_data_provider(my_provider)
+
+        assert format_currency(Money(10.009, 'USD'), locale='en_UK') == 'US$$10.01'
+        assert format_currency(Money(10.009, 'EUR'), locale='en_UK') == '€10.01'
+
+        assert (
+            format_currency(
+                Money(10.000000258, 'BTC'),
+                format='¤¤¤ #,##0.00000000',
+                locale='en_UK',
+                currency_digits=False,
+            )
+            == 'My Bitcoins 10.00000026'
+        )
+
+
 class ExtendedMoney(Money):
     def do_my_behaviour(self):
         pass
