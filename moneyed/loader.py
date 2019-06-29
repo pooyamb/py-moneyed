@@ -2,6 +2,7 @@ import re
 
 from babel import Locale
 from babel.core import get_global, default_locale
+from babel.numbers import get_currency_symbol
 
 from .constants import (
     OBSELETE_CURRENCIES,
@@ -95,4 +96,5 @@ def load_currencies(
             fallback_locale=fallback_locale,
             force_upper=True,
         )
-        add_currency(currency, currency_code, name, countries)
+        sign = get_currency_symbol(currency, locale)
+        add_currency(currency, currency_code, name, sign, countries)
